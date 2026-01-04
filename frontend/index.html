@@ -8,13 +8,28 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
 <style>
-body{margin:0;font-family:sans-serif}
-.top{padding:10px;text-align:right}
-.menu{display:none;position:absolute;right:10px;background:#fff}
-.menu div{padding:10px}
-.bottom{position:fixed;bottom:0;width:100%;display:flex;justify-content:space-around;background:purple}
-.bottom button{padding:10px}
-#chat{height:120px;overflow:auto;border:1px solid #ccc}
+body{margin:0;font-family:sans-serif;padding-bottom:80px}
+.top{padding:10px;text-align:right;position:relative}
+.menu{display:none;position:absolute;right:10px;top:35px;background:#fff;border:1px solid #ccc}
+.menu div{padding:10px;cursor:pointer}
+.menu div:hover{background:#eee}
+
+.bottom{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  display:flex;
+  justify-content:space-around;
+  background:purple;
+}
+.bottom button{padding:10px;color:#fff;background:none;border:none}
+
+#chat{
+  height:120px;
+  overflow:auto;
+  border:1px solid #ccc;
+  margin:5px 0;
+}
 </style>
 </head>
 
@@ -22,94 +37,159 @@ body{margin:0;font-family:sans-serif}
 
 <!-- TOP MENU -->
 <div class="top">
-  <span onclick="toggle()">&#8942;</span>
+  <span onclick="toggleMenu()">&#8942;</span>
   <div id="menu" class="menu">
     <div onclick="showProfile()">Profile</div>
-    <div onclick="alert('Settings')">Settings</div>
+    <div onclick="alert('Settings coming soon')">Settings</div>
     <div onclick="logout()">Logout</div>
   </div>
 </div>
 
 <!-- LOGIN -->
-<input id="name" placeholder="Name">
-<button onclick="register()">Login</button>
+<input id="name" placeholder="Enter name">
+<button onclick="register()">Login / Register</button>
 <p id="uid"></p>
 
 <hr>
 
 <!-- POST -->
-<textarea id="postText"></textarea>
-<button onclick="post()">Post</button>
+<textarea id="postText" placeholder="Write a post"></textarea>
+<br>
+<button onclick="createPost()">Post</button>
 <div id="feed"></div>
 
 <hr>
 
 <!-- CHAT -->
-<input id="to" placeholder="Receiver ID">
+<input id="to" placeholder="Receiver User ID">
 <div id="chat"></div>
-<input id="msg">
-<button onclick="send()">Send</button>
+<input id="msg" placeholder="Message">
+<button onclick="sendMsg()">Send</button>
 
 <!-- BOTTOM -->
 <div class="bottom">
-<button>sms</button><button>call</button><button>home</button>
+  <button>sms</button>
+  <button>call</button>
+  <button>home</button>
 </div>
 
 <script>
-const API = "https://YOUR-RENDER-URL.onrender.com";
-let socket,userId;
+/* ======================
+   CONFIG
+====================== */
+const API = "https://kanha-1-k2ld.onrender.com";
 
-/* menu */
-function toggle(){
-  menu.style.display = menu.style.display==="block"?"none":"block";
+let socket = null;
+let userId = null;
+
+const menu = document.getElementById("menu");
+const chatBox = document.getElementById("chat");
+
+/* ======================
+   MENU
+====================== */
+function toggleMenu(){
+  menu.style.display =
+    menu.style.display === "block" ? "none" : "block";
 }
 
-/* register */
+/* ======================
+   REGISTER
+====================== */
 function register(){
- fetch(API+"/register",{
-  method:"POST",
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({name:name.value})
- }).then(r=>r.json()).then(d=>{
-  userId=d.id;
-  uid.innerText="ID: "+userId;
-  socket=io(API);
-  socket.emit("join",userId);
-  socket.on("receive",m=>{
-    chat.innerHTML+=`<p>${m.from}: ${m.msg}</p>`;
+  if(!name.value){
+    alert("Enter name");
+    return;
+  }
+
+  fetch(API + "/register", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ name: name.value })
+  })
+  .then(r => r.json())
+  .then(d => {
+    userId = d.id;
+    uid.innerText = "Your ID: " + userId;
+
+    // socket connect only once
+    socket = io(API);
+    socket.emit("join", userId);
+
+    socket.on("receive", m => {
+      chatBox.innerHTML +=
+        `<p><b>${m.from}:</b> ${m.msg}</p>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    loadPosts();
   });
- });
 }
 
-/* post */
-function post(){
- fetch(API+"/post",{
-  method:"POST",
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({userId,text:postText.value})
- }).then(loadPosts);
+/* ======================
+   POSTS
+====================== */
+function createPost(){
+  if(!userId){
+    alert("Login first");
+    return;
+  }
+  if(!postText.value) return;
+
+  fetch(API + "/post", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({
+      userId: userId,
+      text: postText.value
+    })
+  })
+  .then(() => {
+    postText.value = "";
+    loadPosts();
+  });
 }
 
-/* load posts */
 function loadPosts(){
- fetch(API+"/posts")
- .then(r=>r.json())
- .then(p=>{
-  feed.innerHTML=p.map(x=>`<p>${x.text}</p>`).join("");
- });
+  fetch(API + "/posts")
+    .then(r => r.json())
+    .then(p => {
+      feed.innerHTML =
+        p.map(x => `<p>${x.text}</p>`).join("");
+    });
 }
 
-/* chat */
-function send(){
- socket.emit("send",{from:userId,to:to.value,msg:msg.value});
+/* ======================
+   CHAT
+====================== */
+function sendMsg(){
+  if(!socket){
+    alert("Login first");
+    return;
+  }
+  if(!to.value || !msg.value) return;
+
+  socket.emit("send", {
+    from: userId,
+    to: to.value,
+    msg: msg.value
+  });
+
+  chatBox.innerHTML +=
+    `<p><b>You:</b> ${msg.value}</p>`;
+  msg.value = "";
+  chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+/* ======================
+   PROFILE / LOGOUT
+====================== */
 function showProfile(){
- alert("User ID: "+userId);
+  alert("Your User ID:\n" + userId);
 }
 
 function logout(){
- location.reload();
+  location.reload();
 }
 </script>
 
