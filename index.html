@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style>
+    .card {
+      position:fixed;
+      bottom:0;
+      left:0;
+      width:100%;
+      height:70px;
+      display:flex;
+      background: purple;
+      align-items:center;
+      justify-content:space-around;
+      z-index:999;
+      
+    }
+    .card button {
+      padding:10px;
+      border:none;
+      border-radius:6px;
+    }
+    .card1 {
+      height:110px;
+      width:110px;
+    }
+    .top{
+  position: relative;   /* 🔴 MUST */
+  padding: 10px;
+  text-align:right;
+}
+
+.dots{
+  font-size: 26px;
+  cursor: pointer;
+}
+
+.menu{
+  display: none;        /* 🔴 MUST */
+  position: absolute;   /* 🔴 MUST */
+  top: 35px;            /* dots-এর নিচে */
+  right: 0;
+
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.2);
+  width: 150px;
+}
+
+.menu div{
+  padding: 10px;
+  cursor: pointer;
+}
+
+.menu div:hover{
+  background: #eee;
+}
+  </style>
+</head>
+
+<body>
+  <div class="top">
+    <span class="dots" onclick="toggleMenu()">&#8942;</span>
+    <div class="menu" id="menu">
+      <div onclick="profile()">Profile</div>
+      <div onclick="settings()">Setting</div>
+      <div onclick="help()">Help</div>
+      <div onclick="logout()">Logout</div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <button onclick="post">Post</button>
+    <button onclick="text">sms</button>
+    <button onclick="call">call</button>
+    <button onclick="home">home</button>
+    <button onclick="notify">notify</button>
+  </div>
+  <script>
+    
+function toggleMenu(){
+  const m = document.getElementById("menu");
+  m.style.display = (m.style.display === "block") ? "none" : "block";
+}
+
+function profile(){ alert("Profile"); }
+function settings(){ alert("Settings"); }
+function help(){ alert("Help"); }
+function logout(){ alert("Logout"); }
+</script>
+  
+</body>
+
+</html>
