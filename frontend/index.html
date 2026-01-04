@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mini Social App</title>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<style>
+body{margin:0;font-family:sans-serif}
+.top{padding:10px;text-align:right}
+.menu{display:none;position:absolute;right:10px;background:#fff}
+.menu div{padding:10px}
+.bottom{position:fixed;bottom:0;width:100%;display:flex;justify-content:space-around;background:purple}
+.bottom button{padding:10px}
+#chat{height:120px;overflow:auto;border:1px solid #ccc}
+</style>
+</head>
+
+<body>
+
+<!-- TOP MENU -->
+<div class="top">
+  <span onclick="toggle()">&#8942;</span>
+  <div id="menu" class="menu">
+    <div onclick="showProfile()">Profile</div>
+    <div onclick="alert('Settings')">Settings</div>
+    <div onclick="logout()">Logout</div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<input id="name" placeholder="Name">
+<button onclick="register()">Login</button>
+<p id="uid"></p>
+
+<hr>
+
+<!-- POST -->
+<textarea id="postText"></textarea>
+<button onclick="post()">Post</button>
+<div id="feed"></div>
+
+<hr>
+
+<!-- CHAT -->
+<input id="to" placeholder="Receiver ID">
+<div id="chat"></div>
+<input id="msg">
+<button onclick="send()">Send</button>
+
+<!-- BOTTOM -->
+<div class="bottom">
+<button>sms</button><button>call</button><button>home</button>
+</div>
+
+<script>
+const API = "https://YOUR-RENDER-URL.onrender.com";
+let socket,userId;
+
+/* menu */
+function toggle(){
+  menu.style.display = menu.style.display==="block"?"none":"block";
+}
+
+/* register */
+function register(){
+ fetch(API+"/register",{
+  method:"POST",
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({name:name.value})
+ }).then(r=>r.json()).then(d=>{
+  userId=d.id;
+  uid.innerText="ID: "+userId;
+  socket=io(API);
+  socket.emit("join",userId);
+  socket.on("receive",m=>{
+    chat.innerHTML+=`<p>${m.from}: ${m.msg}</p>`;
+  });
+ });
+}
+
+/* post */
+function post(){
+ fetch(API+"/post",{
+  method:"POST",
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({userId,text:postText.value})
+ }).then(loadPosts);
+}
+
+/* load posts */
+function loadPosts(){
+ fetch(API+"/posts")
+ .then(r=>r.json())
+ .then(p=>{
+  feed.innerHTML=p.map(x=>`<p>${x.text}</p>`).join("");
+ });
+}
+
+/* chat */
+function send(){
+ socket.emit("send",{from:userId,to:to.value,msg:msg.value});
+}
+
+function showProfile(){
+ alert("User ID: "+userId);
+}
+
+function logout(){
+ location.reload();
+}
+</script>
+
+</body>
+</html>
